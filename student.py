@@ -6,10 +6,10 @@
 # Answer TODO 1 as a comment here:
 ############################ TODO 1 BEGIN #################################
 #
-#
-#
-#
-#
+# Whereas fc6 and fc7 are transformed by both ReLU and dropout in-place layers
+# (meaning that they are directly transformed), fc8 is simply
+# output as is. A ReLU layer will transform the output to be non-negative, so the
+# lack of one attached to fc8 lets it span both negative and positive output values.
 #
 ############################ TODO 1 END #################################
 
@@ -39,8 +39,21 @@ def convert_ilsvrc2012_probs_to_dog_vs_food_probs(probs_ilsvrc):
     food_indices = range(924, 970)
     N, _ = probs_ilsvrc.shape
     probs = np.zeros((N, 2)) # placeholder
+
     ############################ TODO 2 BEGIN #################################
-    raise NotImplementedError("TODO 2")
+    dogSum = 0
+    foodSum = 0
+
+    # for every image in the test set
+    for i in range(N):
+        # calculate the sums at the correct indexes
+        dogSum = sum(probs_ilsvrc[i, dog_indices])
+        foodSum = sum(probs_ilsvrc[i, food_indices])
+
+        # put the probabilities in place and normalize
+        probs[i] = (dogSum, foodSum)
+        probs[i] = probs[i]/sum(probs[i])
+
     ############################ TODO 2 END #################################
     return probs
 
@@ -56,7 +69,10 @@ def get_prediction_descending_order_indices(probs, cidx):
     """
     order = range(probs.shape[0]) # placeholder
     ############################ TODO 3 BEGIN #################################
-    raise NotImplementedError("TODO 3")
+
+    # perform the sort (automatically returns in ascending order, so need to reverse with [::-1])
+    order = np.argsort(probs[:,cidx])[::-1]
+
     ############################ TODO 3 END #################################
     return order
 
@@ -75,7 +91,17 @@ def compute_dscore_dimage(net, data, class_idx):
     """
     grad = np.zeros_like(data) # placeholder
     ############################ TODO 4 BEGIN #################################
-    raise NotImplementedError("TODO 4")
+
+    # set fc8 diff layer to 0 except at class_idx, where = 1
+    net.blobs['fc8'].diff[0, ...] = 0
+    net.blobs['fc8'].diff[0, class_idx] = 1
+
+    # back propagate the network
+    net.backward(start='fc8', end='data')
+
+    # get the diff of the image data layer
+    grad = np.copy(net.blobs['data'].diff[0])
+
     ############################ TODO 4 END #################################
     assert grad.shape == (3, 227, 227) # expected shape
     return grad

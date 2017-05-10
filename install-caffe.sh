@@ -1,6 +1,6 @@
 #!/bin/bash
 # You need to change this to your downloaded project path !!!!
-WORKING_PATH=/home/ubuntu/Cornell-CS5670-2017/Project5_CovNet/
+WORKING_PATH=/media/sf_ComputerVision/Proj5
 
 
 set -x
