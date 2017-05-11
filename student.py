@@ -123,7 +123,15 @@ def normalized_sgd_with_momentum_update(data, grad, velocity, momentum, learning
     :return: the updated image and momentum vector (data, velocity)
     """
     ############################ TODO 5a BEGIN #################################
-    raise NotImplementedError("TODO 5a")
+
+    # using formulas from notebook
+    velocity_new = (np.dot(momentum, velocity) - (learning_rate * grad/np.linalg.norm(grad)))
+    data_new = data + velocity_new
+
+    # update the stuff
+    velocity = velocity_new
+    data = data_new
+
     ############################ TODO 5a BEGIN #################################
     return data, velocity
 
@@ -140,7 +148,15 @@ def fooling_image_gradient(net, orig_data, data, target_class, regularization):
     """
     grad = np.zeros_like(data) # placeholder
     ############################ TODO 5b BEGIN #################################
-    raise NotImplementedError("TODO 5b")
+
+    # compute new data gradient
+    new_gradient = compute_dscore_dimage(net, data, target_class)
+
+    # compute normalized
+    normalized_data = regularization * (data - orig_data)
+
+    grad = (-1.0*new_gradient) + normalized_data
+
     ############################ TODO 5b END #################################
     assert grad.shape == (3, 227, 227) # expected shape
     return grad
@@ -157,7 +173,15 @@ def class_visualization_gradient(net, data, target_class, regularization):
     """
     grad = np.zeros_like(data) # placeholder
     ############################ TODO 6 BEGIN #################################
-    raise NotImplementedError("TODO 6")
+
+    # compute new data gradient
+    new_gradient = compute_dscore_dimage(net, data, target_class)
+
+    # compute normalized
+    normalized_data = regularization * (data)
+
+    grad = (-1.0*new_gradient) + normalized_data
+
     ############################ TODO 6 END #################################
     assert grad.shape == (3, 227, 227) # expected shape
     return grad
@@ -175,7 +199,20 @@ def feature_inversion_gradient(net, data, blob_name, target_feat, regularization
     """
     grad = np.zeros_like(data) # placeholder
     ############################ TODO 7a BEGIN #################################
-    raise NotImplementedError("TODO 7a")
+
+    # get the diff of the image data layer
+    target_diff = np.copy(net.blobs[blob_name].data[0] - target_feat)
+    net.blobs[blob_name].diff[0] = ((.5)/(target_feat.size)) * target_diff
+
+    # back propagate the network
+    net.backward(start=blob_name, end='data')
+
+    # copy the gradient, and compute the regularization
+    grad = np.copy(net.blobs['data'].diff[0])
+    regularized_data = regularization * (data)
+
+    grad = grad + regularized_data # add in regularization term
+
     ############################ TODO 7a END #################################
     assert grad.shape == (3, 227, 227) # expected shape
     return grad
@@ -184,11 +221,15 @@ def feature_inversion_gradient(net, data, blob_name, target_feat, regularization
 # Answer TODO 7b as a comment here:
 ############################ TODO 7b BEGIN #################################
 #
-# (a)
+# (a) The quality of the reconstruction deteriorates. This is because the neural network
+# is developing a more and more abstract view of the image: it is extracting higher-level concepts of the image
+# instead of individual pixels. If it were still providing a good representation of pixels,
+# it would be overfit to the data, and would not be able to generate more conceptual class predictions.
 #
-#
-#
-# (b)
+# (b) The regularization parameter controls how fast the changes are calculated to the image.
+# Thus, because of the architectural differences between layers, adjusting this can prevent radical changes from
+# one layer to the next. To change this dynamically, the parameter could be directly
+# incorporated into the objective function.
 #
 #
 #
